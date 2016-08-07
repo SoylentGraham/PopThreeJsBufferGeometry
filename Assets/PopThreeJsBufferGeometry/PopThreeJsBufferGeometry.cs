@@ -1,6 +1,10 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System;
+using System.IO;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 [Serializable]
 public class BufferGeometry4_Meta
@@ -86,4 +90,25 @@ public class PopThreeJsBufferGeometry
 		return JsonUtility.ToJson( Geo, true );
 	}
 	
+	static public void SaveMeshFile(Mesh mesh)
+	{
+		string path = UnityEditor.EditorUtility.SaveFilePanel( "Save mesh json", "", mesh.name + ".json", "json" );
+		if( path.Length != 0 )
+		{
+			var Json = PopThreeJsBufferGeometry.GetMeshJsonString( mesh );
+			var FileHandle = File.CreateText( path );
+			FileHandle.Write(Json);
+			FileHandle.Close();
+			PopBrowseToFile.ShowFile( path );
+		}
+	}
+
+#if UNITY_EDITOR
+	[MenuItem("CONTEXT/MeshFilter/Export Mesh as .json...")]
+	public static void SaveMeshInPlace (MenuCommand menuCommand) {
+		MeshFilter mf = menuCommand.context as MeshFilter;
+		Mesh mesh = mf.sharedMesh;
+		SaveMeshFile( mesh );
+	}
+#endif
 }
