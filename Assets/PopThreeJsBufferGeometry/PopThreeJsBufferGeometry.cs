@@ -60,7 +60,7 @@ public class BufferGeometry4_Attributes
 [Serializable]
 public class BufferGeometry4_Data
 {
-	public BufferGeometry4_Attribute_Int	indicies;
+	public BufferGeometry4_Attribute_Int	index;
 	public BufferGeometry4_Attributes		attributes;
 };
 
@@ -186,6 +186,13 @@ public class BufferGeometry4
 		Attribute.array = FloatArray;
 	}
 
+	void PadNullAttribute(ref BufferGeometry4_Attribute_Float Attribute)
+	{
+		if ( Attribute != null )
+			return;
+		Attribute = new BufferGeometry4_Attribute_Float(1);
+	}
+
 
 	public BufferGeometry4(Mesh mesh,int Version=0)
 	{ 
@@ -196,15 +203,23 @@ public class BufferGeometry4
 		data.attributes = new BufferGeometry4_Attributes();
 	
 		//	serialise data
+		//	note: we write them all
 		WriteAttribute( ref data.attributes.position, mesh.vertices );
 		WriteAttribute( ref data.attributes.normal, mesh.normals );
 		WriteAttribute( ref data.attributes.uv, mesh.uv );
 		WriteAttribute( ref data.attributes.uv2, mesh.uv2 );
 		WriteAttribute( ref data.attributes.color, mesh.colors );
 
+		//	gr: if an attrib is null, unity still serialises an "empty" class. if its empty.. three js will throw an exception... so make empty attribs
+		PadNullAttribute( ref data.attributes.position );
+		PadNullAttribute( ref data.attributes.normal );
+		PadNullAttribute( ref data.attributes.uv );
+		PadNullAttribute( ref data.attributes.uv2 );
+		PadNullAttribute( ref data.attributes.color );
+
 		//	write triangle indexes - currently just a direct copy
-		data.indicies = new BufferGeometry4_Attribute_Int();
-		data.indicies.array = mesh.triangles;
+		data.index = new BufferGeometry4_Attribute_Int();
+		data.index.array = mesh.triangles;
 	}
 };
 
