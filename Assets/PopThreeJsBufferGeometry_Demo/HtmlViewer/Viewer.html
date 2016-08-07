@@ -57,16 +57,69 @@
 		<div id="Header">Simple <a href=http://threejs.org>three.js</a> Buffer Geometry viewer. Drag & drop .json file to view.</div>
 		<div id="RenderContainer"><div id="RenderCanvas"></div></div>
 
+
+		<script>
+			function GetDropContainer()
+			{
+				return document.getElementById( 'RenderContainer' );
+			}
+
+			function handleFileSelect(evt) 
+			{
+  				evt.stopPropagation();
+				evt.preventDefault();
+
+				var files = evt.dataTransfer.files; // FileList object.
+
+				for (var i = 0, f; f = files[i]; i++) 
+				{
+					var reader = new FileReader();
+
+					var OnLoadFile = function(e)
+					{
+						LoadGeometryJson(e.target.result);
+					};
+
+					// Closure to capture the file information.
+					reader.onload = OnLoadFile;
+
+					// Read in the image file as a data URL.
+					reader.readAsText(f);
+				}
+			}
+
+			function handleDragOver(evt) 
+			{
+				evt.stopPropagation();
+				evt.preventDefault();
+				evt.dataTransfer.dropEffect = 'copy'; // Explicitly show this is a copy.
+			}
+
+			// Setup the dnd listeners.
+			var dropZone = GetDropContainer();
+			dropZone.addEventListener('dragover', handleDragOver, false);
+			dropZone.addEventListener('drop', handleFileSelect, false);
+			
+		</script>
+
+
+
 		<script>
 
 			var container;
 			var camera, scene, raycaster, renderer, mesh;
 
 			var mouse = new THREE.Vector2(), INTERSECTED;
-			var frustumSize = 60;
+			var frustumSize = 20;
 
 			init();
 			animate();
+
+			function LoadGeometryJson(GeometryJson)
+			{
+				
+				console.log( GeometryJson );
+			}
 
 			function GetContainer()
 			{
@@ -88,11 +141,16 @@
 				light.position.set( 5, 20, 10 ).normalize();
 				scene.add( light );
 
-				var geometry = new THREE.BoxBufferGeometry( 20, 20, 20 );
+				var geometry = new THREE.BoxBufferGeometry( 1, 1, 1 );
 
 				mesh = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: 0x5588DD } ) );
 				scene.add( mesh );
 
+				var GridSize = 10;
+				var GridStep = GridSize;
+
+				var gridHelper = new THREE.GridHelper( GridSize, GridStep, 0x888888, 0x888888 );
+				scene.add( gridHelper );
 
 				raycaster = new THREE.Raycaster();
 
@@ -109,7 +167,7 @@
 
 			
 
-				container.addEventListener( 'mousemove', onMouseMove, false );
+				renderer.domElement.addEventListener( 'mousemove', onMouseMove, false );
 
 				//
 
@@ -150,7 +208,8 @@
 				container = GetContainer();
 
 				mouse.x = ( localx / container.clientWidth ) * 2 - 1;
-				mouse.y = - ( localx / container.clientHeight ) * 2 + 1;
+				mouse.y = - ( localy / container.clientHeight ) * 2 + 1;
+				//console.log( mouse );
 				event.preventDefault();
 			}
 
@@ -165,6 +224,36 @@
 
 			}
 
+			function SelectObject(Object)
+			{
+				if ( Object == INTERSECTED )
+					return true;
+
+				//	not selectable
+				if ( !Object.material || !Object.material.emissive )
+					return false;
+
+				UnselectObject();
+
+				if ( Object )
+				{
+					Object.currentHex = Object.material.emissive.getHex();
+					Object.material.emissive.setHex( 0xff0000 );
+				}
+				INTERSECTED = Object;
+				return true;
+			}
+
+			function UnselectObject()
+			{
+				//	restore emissive
+				if ( INTERSECTED )
+				{
+					INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
+				}
+				INTERSECTED = null;
+			}
+
 			function render() {
 
 				
@@ -174,25 +263,17 @@
 
 				var intersects = raycaster.intersectObjects( scene.children );
 
-				if ( intersects.length > 0 ) {
-
-					if ( INTERSECTED != intersects[ 0 ].object ) {
-
-						if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
-
-						INTERSECTED = intersects[ 0 ].object;
-						INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
-						INTERSECTED.material.emissive.setHex( 0xff0000 );
-
+				var Selected = false;
+				for ( var i=0;	i<intersects.length;	i++ )
+				{
+					if ( SelectObject(intersects[ i ].object) )
+					{
+						Selected = true;
+						break;
 					}
-
-				} else {
-
-					if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
-
-					INTERSECTED = null;
-
 				}
+				if ( !Selected )
+					UnselectObject();
 
 				renderer.render( scene, camera );
 
