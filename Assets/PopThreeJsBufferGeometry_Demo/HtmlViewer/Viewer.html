@@ -111,7 +111,7 @@
 			var camera, scene, raycaster, renderer, mesh;
 
 			var mouse = new THREE.Vector2(), INTERSECTED;
-			var frustumSize = 8;
+			var frustumSize = 5;
 
 			init();
 			animate();
@@ -123,8 +123,28 @@
 				var GeometryJson = JSON.parse(GeometryJsonString);
 				console.log(GeometryJson);
 				var Loader = new THREE.BufferGeometryLoader();
+				
 				var geometry = Loader.parse( GeometryJson );
+				console.log(geometry);
+				
+				//	gr: not rendering with indexes...
+				geometry = geometry.toNonIndexed();
+
+				//	gr: and the normals out of unity are a bit screwed up. Maybe need inverting, or rotating... fix this in unity!
+				geometry.computeVertexNormals();
+				
 				mesh = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: 0x5588DD } ) );
+
+				//	set as double sided in case normals are odd
+				var SetMaterialDoubleSided = function(node)
+				{
+					if ( node.material ) 
+					{
+						node.material.side = THREE.DoubleSide;
+    					}
+				};
+				mesh.traverse( SetMaterialDoubleSided );
+			
 				scene.add( mesh );
 			}
 
@@ -184,10 +204,9 @@
 
 			var CameraYaw = 45;
 			var CameraPitch = 45;
+			var CameraDistance = 20;
 			function UpdateCamera()
 			{
-				var CameraDistance = 400;
-				
 				CameraYaw += 0.5;
 
 				camera.position.x = CameraDistance * Math.sin( THREE.Math.degToRad( CameraYaw ) );
@@ -197,6 +216,8 @@
 
 				camera.updateMatrixWorld();
 			}
+
+			
 			
 			function onWindowResize() {
 
