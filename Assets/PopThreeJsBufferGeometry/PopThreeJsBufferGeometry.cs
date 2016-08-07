@@ -119,7 +119,11 @@ public class BufferGeometry4
 	public BufferGeometry4_Meta		metadata;
 	public BufferGeometry4_Data		data;
 
-	void WriteAttribute(ref BufferGeometry4_Attribute_Float Attribute, Vector3[] VectorArray)
+	delegate void	ModifyVector3(ref Vector3 v);
+	delegate void	ModifyVector2(ref Vector2 v);
+	delegate void	ModifyColor(ref Color v);
+
+	void WriteAttribute(ref BufferGeometry4_Attribute_Float Attribute, Vector3[] VectorArray,ModifyVector3 Modify=null)
 	{ 
 		if ( VectorArray == null )
 		{
@@ -134,6 +138,9 @@ public class BufferGeometry4
 		for ( int i=0;	i<VectorArray.Length;	i++ )
 		{ 
 			var Pos3 = VectorArray[i];
+			if ( Modify != null )
+				Modify( ref Pos3 );
+
 			FloatArray[(i*VectorSize)+0] = Pos3.x;
 			FloatArray[(i*VectorSize)+1] = Pos3.y;
 			FloatArray[(i*VectorSize)+2] = Pos3.z;
@@ -141,7 +148,7 @@ public class BufferGeometry4
 		Attribute.array = FloatArray;
 	}
 
-	void WriteAttribute(ref BufferGeometry4_Attribute_Float Attribute, Vector2[] VectorArray)
+	void WriteAttribute(ref BufferGeometry4_Attribute_Float Attribute, Vector2[] VectorArray,ModifyVector2 Modify=null)
 	{ 
 		if ( VectorArray == null )
 		{
@@ -156,6 +163,9 @@ public class BufferGeometry4
 		for ( int i=0;	i<VectorArray.Length;	i++ )
 		{ 
 			var Pos3 = VectorArray[i];
+			if ( Modify != null )
+				Modify( ref Pos3 );
+
 			FloatArray[(i*VectorSize)+0] = Pos3.x;
 			FloatArray[(i*VectorSize)+1] = Pos3.y;
 		}
@@ -164,7 +174,7 @@ public class BufferGeometry4
 
 
 	//	for this json it's RGB, not RGBA
-	void WriteAttribute(ref BufferGeometry4_Attribute_Float Attribute, Color[] VectorArray)
+	void WriteAttribute(ref BufferGeometry4_Attribute_Float Attribute, Color[] VectorArray,ModifyColor Modify=null)
 	{ 
 		if ( VectorArray == null )
 		{
@@ -179,6 +189,9 @@ public class BufferGeometry4
 		for ( int i=0;	i<VectorArray.Length;	i++ )
 		{ 
 			var Pos3 = VectorArray[i];
+			if ( Modify != null )
+				Modify( ref Pos3 );
+
 			FloatArray[(i*VectorSize)+0] = Pos3.r;
 			FloatArray[(i*VectorSize)+1] = Pos3.g;
 			FloatArray[(i*VectorSize)+2] = Pos3.b;
@@ -201,10 +214,15 @@ public class BufferGeometry4
 		data = new BufferGeometry4_Data();
 
 		data.attributes = new BufferGeometry4_Attributes();
-	
+
+		ModifyVector3 ReorientatePosition = (ref Vector3 p) =>
+		{
+			p.y = -p.y;
+		};	
+
 		//	serialise data
 		//	note: we write them all
-		WriteAttribute( ref data.attributes.position, mesh.vertices );
+		WriteAttribute( ref data.attributes.position, mesh.vertices, ReorientatePosition );
 		WriteAttribute( ref data.attributes.normal, mesh.normals );
 		WriteAttribute( ref data.attributes.uv, mesh.uv );
 		WriteAttribute( ref data.attributes.uv2, mesh.uv2 );
