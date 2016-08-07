@@ -54,6 +54,7 @@
 
 		<script src="http://threejs.org/build/three.js"></script>
 
+
 		<div id="Header">Simple <a href=http://threejs.org>three.js</a> Buffer Geometry viewer. Drag & drop .json file to view.</div>
 		<div id="RenderContainer"><div id="RenderCanvas"></div></div>
 
@@ -110,15 +111,21 @@
 			var camera, scene, raycaster, renderer, mesh;
 
 			var mouse = new THREE.Vector2(), INTERSECTED;
-			var frustumSize = 20;
+			var frustumSize = 8;
 
 			init();
 			animate();
 
-			function LoadGeometryJson(GeometryJson)
+			function LoadGeometryJson(GeometryJsonString)
 			{
-				
-				console.log( GeometryJson );
+				scene.remove( mesh );
+				console.log( GeometryJsonString );
+				var GeometryJson = JSON.parse(GeometryJsonString);
+				console.log(GeometryJson);
+				var Loader = new THREE.BufferGeometryLoader();
+				var geometry = Loader.parse( GeometryJson );
+				mesh = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: 0x5588DD } ) );
+				scene.add( mesh );
 			}
 
 			function GetContainer()
@@ -142,11 +149,10 @@
 				scene.add( light );
 
 				var geometry = new THREE.BoxBufferGeometry( 1, 1, 1 );
-
 				mesh = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: 0x5588DD } ) );
 				scene.add( mesh );
 
-				var GridSize = 10;
+				var GridSize = 20;
 				var GridStep = GridSize;
 
 				var gridHelper = new THREE.GridHelper( GridSize, GridStep, 0x888888, 0x888888 );
@@ -174,7 +180,24 @@
 				window.addEventListener( 'resize', onWindowResize, false );
 
 			}
+		
 
+			var CameraYaw = 45;
+			var CameraPitch = 45;
+			function UpdateCamera()
+			{
+				var CameraDistance = 400;
+				
+				CameraYaw += 0.5;
+
+				camera.position.x = CameraDistance * Math.sin( THREE.Math.degToRad( CameraYaw ) );
+				camera.position.y = CameraDistance * Math.sin( THREE.Math.degToRad( CameraPitch ) );
+				camera.position.z = CameraDistance * Math.cos( THREE.Math.degToRad( CameraYaw ) );
+				camera.lookAt( scene.position );
+
+				camera.updateMatrixWorld();
+			}
+			
 			function onWindowResize() {
 
 				container = GetContainer();
@@ -187,16 +210,8 @@
 
 				camera.updateProjectionMatrix();
 
-				var CameraDistance = 400;
-				var CameraAngle = 45;
-
-				camera.position.x = CameraDistance * Math.sin( THREE.Math.degToRad( CameraAngle ) );
-				camera.position.y = CameraDistance * Math.sin( THREE.Math.degToRad( CameraAngle ) );
-				camera.position.z = CameraDistance * Math.cos( THREE.Math.degToRad( CameraAngle ) );
-				camera.lookAt( scene.position );
-
-				camera.updateMatrixWorld();
-
+				UpdateCamera();
+				
 				renderer.setSize( container.clientWidth, container.clientHeight );
 
 			}
@@ -218,7 +233,6 @@
 			function animate() {
 
 				requestAnimationFrame( animate );
-
 				render();
 				
 
@@ -256,9 +270,10 @@
 
 			function render() {
 
+
+				UpdateCamera();
 				
 				// find intersections
-
 				raycaster.setFromCamera( mouse, camera );
 
 				var intersects = raycaster.intersectObjects( scene.children );
