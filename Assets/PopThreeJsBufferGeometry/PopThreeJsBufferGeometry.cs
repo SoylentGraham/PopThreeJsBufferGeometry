@@ -217,7 +217,11 @@ public class BufferGeometry4
 
 		ModifyVector3 ReorientatePosition = (ref Vector3 p) =>
 		{
+			//	+y is up in threejs (by default)
 			p.y = -p.y;
+			//	xz seems to be wrong too. Experimenting suggests just z needs correcting
+			//p.x = -p.x;
+			p.z = -p.z;
 		};	
 
 		//	serialise data
