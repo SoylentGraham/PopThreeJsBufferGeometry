@@ -207,7 +207,7 @@ public class BufferGeometry4
 	}
 
 
-	public BufferGeometry4(Mesh mesh,int Version=0)
+	public BufferGeometry4(Mesh mesh,Matrix4x4 Transform,int Version=0)
 	{ 
 		metadata = new BufferGeometry4_Meta();
 		metadata.version = Version;
@@ -217,8 +217,10 @@ public class BufferGeometry4
 
 		ModifyVector3 ReorientatePosition = (ref Vector3 p) =>
 		{
+			p = Transform.MultiplyPoint(p);
+
 			//	+y is up in threejs (by default)
-			p.y = -p.y;
+			//p.y = -p.y;
 			//	xz seems to be wrong too. Experimenting suggests just z needs correcting
 			//p.x = -p.x;
 			p.z = -p.z;
@@ -248,31 +250,46 @@ public class BufferGeometry4
 
 public class PopThreeJsBufferGeometry
 {
-	static public string GetMeshJsonString(Mesh mesh)
+	static public string GetMeshJsonString(Mesh mesh,Matrix4x4 Transform)
 	{
-		var Geo = new BufferGeometry4( mesh );
+		var Geo = new BufferGeometry4( mesh, Transform );
 		return JsonUtility.ToJson( Geo, true );
 	}
-	
-	static public void SaveMeshFile(Mesh mesh)
+
+#if UNITY_EDITOR
+	static public void SaveMeshFile(Mesh mesh,Matrix4x4 Transform)
 	{
 		string path = UnityEditor.EditorUtility.SaveFilePanel( "Save mesh json", "", mesh.name + ".json", "json" );
 		if( path.Length != 0 )
 		{
-			var Json = PopThreeJsBufferGeometry.GetMeshJsonString( mesh );
+			var Json = PopThreeJsBufferGeometry.GetMeshJsonString( mesh, Transform );
 			var FileHandle = File.CreateText( path );
 			FileHandle.Write(Json);
 			FileHandle.Close();
 			PopBrowseToFile.ShowFile( path );
 		}
 	}
+#endif
 
 #if UNITY_EDITOR
 	[MenuItem("CONTEXT/MeshFilter/Export Mesh as .json...")]
 	public static void SaveMeshInPlace (MenuCommand menuCommand) {
 		MeshFilter mf = menuCommand.context as MeshFilter;
 		Mesh mesh = mf.sharedMesh;
-		SaveMeshFile( mesh );
+		SaveMeshFile( mesh, Matrix4x4.identity );
 	}
 #endif
+
+
+#if UNITY_EDITOR
+	[MenuItem("CONTEXT/MeshFilter/Export Mesh as .json baked in world space...")]
+	public static void SaveMeshInPlaceBaked (MenuCommand menuCommand) {
+		MeshFilter mf = menuCommand.context as MeshFilter;
+		Mesh mesh = mf.sharedMesh;
+
+		var Mtx = mf.transform.localToWorldMatrix;
+
+		SaveMeshFile( mesh, Mtx );
+	}
+	#endif
 }

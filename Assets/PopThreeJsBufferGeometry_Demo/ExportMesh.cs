@@ -14,11 +14,12 @@ public class ExportMesh : MonoBehaviour {
 			MeshSource = GetComponent<MeshFilter>();
 	}
 
-
+	#if UNITY_EDITOR
 	public void SaveMeshFile()
 	{
-		PopThreeJsBufferGeometry.SaveMeshFile( MeshSource.mesh );
+		PopThreeJsBufferGeometry.SaveMeshFile( MeshSource.mesh, Matrix4x4.identity );
 	}
+	#endif
 
 	
 
